@@ -32,5 +32,26 @@ def create_customer(Customer_ID, Customer_Name , graph):
     customer = graph.cypher.execute(query)
     return customer
 
-def create_book(Book_ID, Book_Name, Book_Author, Book_Category, Book_CategoryID, graph):
-    query = ""
+def create_book(Book_ID, Book_Name, Book_Author, Book_Category, graph):
+    query1 = "CREATE (N: Book {Book_id : '" + str(Book_ID) + "', Book_name : '" + Book_Name + "', Book_Author : '"+Book_Author+"' }) return n"
+    query2 = "Match (N : Category {category_name : '"+Book_Category+"'}) return N"
+
+
+def get_book():
+    return False
+
+def get_customer():
+    return False
+
+def customer_buy_book():
+    return False
+
+def get_invoice_details():
+    return False
+
+def get_recommended():
+    return False
+
+def get_total_income():
+    return False
+
