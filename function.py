@@ -7,7 +7,7 @@ from datetime import *
 import time
 from py2neo import Node, Relationship
 from py2neo import Graph
-
+from operator import itemgetter
 
 # neo4j Data retrieval done in x.properties[<property name>]
 
@@ -37,32 +37,50 @@ def create_customer(Customer_ID, Customer_Name, graph):
 
 def create_book(Book_ID, Book_Name, Book_Category, graph):
     query1 = "CREATE (N: Book {Book_id : '" + str(Book_ID) + "', Book_name : '" + Book_Name + "' }) return N"
-    queryi = "Create (N : Category {category_name : '"+Book_Category+"'}) Return N"
-    queryj = "MATCH (N: Category {category_name : '"+ Book_Category + "'}) return N"
+
+    x = get_category(Book_Category,graph)
+    if x == None:
+
+        queryi = "Create (N : Category {category_name : '"+Book_Category+"'}) Return N"
+        graph.cypher.execute(queryi)
     query2 = "MATCH (N:Book {Book_id : '" + str(Book_ID) + "'}), (M: Category {category_name : '" + Book_Category + "'}) CREATE (N)-[:belongs_to]->(M)"
     graph.cypher.execute(query1)
 
-    graph.cypher.execute(queryi)
-    graph.cypher.execute(queryj)
+
+
     graph.cypher.execute(query2)
 
 
 def get_book(Book_ID, graph):#Mongo
     query = "MATCH (N:Book {Book_id : '" + str(Book_ID) + "'}) return N"
     result = graph.cypher.stream(query)
-    listx = []
+    listx= []
     for i in result:
         listx.append(i[0])
+    if listx == []:
+        return None
     return listx[0]
+
+def get_category(Category, graph):
+    query = "MATCH(n:Category{category_name : '"+Category+"'}) return n"
+    result = graph.cypher.stream(query)
+    listx= []
+    for i in result:
+        listx.append(i[0])
+    if listx == []:
+        return None
+    return listx[0].properties
 
 
 def get_customer(Customer_ID, graph):#Mongo
     query = "MATCH (N:Customer {id : '" + str(Customer_ID) + "'}) return N"
     result = graph.cypher.stream(query)
 
-    listx = []
+    listx= []
     for i in result:
         listx.append(i[0])
+    if listx == []:
+        return None
     return listx[0].properties
 
 def customer_buy_book(Customer_ID, Book_ID, quantity, cost, date, graph): #date must be in datetime format
@@ -91,14 +109,17 @@ def get_recommended(Customer_ID,date,  graph): #date must be in datetime format
     return retlist
 
 
-def get_total_income(time_init, time_end, graph):#date must be in datetime format
+def get_total_income(time_init,  graph,time_end=datetime(1970, 1,1)):#date must be in datetime format
 
     time_init = int(time.mktime(time_init.timetuple()))
-    time_end = int(time.mktime(time_end.timetuple()))
-    query = "match(n:Customer)-[b]->() where b.date > "+str(time_init)+"  and b.date - "+str(time_end)+" <  2505600   return n.name, sum(b.quantity)"
+    #time_end = int(time.mktime(time_end.timetuple()))
+    query = "match(n:Customer)-[b]->() where b.date < "+str(time_init)+"  and "+str(time_init)+" - b.date  <  2505600   return n.name,sum(b.cost), sum(b.quantity)"
+    print(query)
     result = graph.cypher.stream(query)
     retlist = []
     for i in result:
-        retlist.append(i[0].properties)
-    retlist.sort()
+        retlist.append([i[0], i[1], i[2]])
+    sorted(retlist, key=itemgetter(2))
     return retlist
+
+
